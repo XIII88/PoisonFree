@@ -1,105 +1,45 @@
-import requests
-import os
-import fake_useragent
-import termcolor
-import pyfiglet
-from fake_useragent import UserAgent
-from termcolor import colored
-os.system('cls' if os.name == 'nt' else 'clear')
-banner = """
+from pystyle import Write, Colors
+from phonenumbers import parse, is_valid_number, is_possible_number, carrier, geocoder, timezone, PhoneNumberFormat, format_number
 
+def phoneinfo(phone):
+    try:
+        # Парсинг номера телефона
+        parsed_phone = parse(phone, None)
+        
+        # Проверка валидности номера
+        if not is_valid_number(parsed_phone):
+            Write.Print("\n[!] Произошла ошибка -> Недействительный номер телефона\n", Colors.red_to_yellow, interval=0.005)
+            return
+        
+        # Получение информации о номере
+        carrier_info = carrier.name_for_number(parsed_phone, "en")
+        country = geocoder.description_for_number(parsed_phone, "en")
+        region = geocoder.description_for_number(parsed_phone, "ru")
+        formatted_number = format_number(parsed_phone, PhoneNumberFormat.INTERNATIONAL)
+        is_valid = is_valid_number(parsed_phone)
+        is_possible = is_possible_number(parsed_phone)
+        
+        # Форматирование и вывод информации
+        print_phone_info = f"""
+[+] Номер телефона -> {formatted_number}
+[+] Страна -> {country}
+[+] Регион -> {region}
+[+] Оператор -> {carrier_info}
+[+] Активен -> {is_possible}
+[+] Валид -> {is_valid}
+[+] Telegram -> https://t.me/{phone}
+[+] Whatsapp -> https://wa.me/{phone}
+[+] Viber -> https://viber.click/{phone}\n"""
+        
+        Write.Print(print_phone_info, Colors.red_to_yellow, interval=0.005)
+    except Exception as e:
+        Write.Print(f"\n[!] Произошла ошибка -> {str(e)}\n", Colors.red_to_white, interval=0.005)
 
-     ██████╗  █████╗ ██╗ ██████╗ █████╗ ███╗  ██╗
-     ██╔══██╗██╔══██╗██║██╔════╝██╔══██╗████╗ ██║      
-     ██████╔╝██║░░██║██║╚█████╗ ██║░░██║██╔██╗██║       
-     ██╔═══╝ ██║░░██║██║ ╚═══██╗██║░░██║██║╚████║ 
-     ██║     ╚█████╔╝██║██████╔╝╚█████╔╝██║ ╚███║
-     ╚═╝      ╚════╝ ╚═╝╚═════╝  ╚════╝ ╚═╝  ╚══╝         
-     Powered by Venom     
-  """
-
-print(colored(banner, "red"))
-
-
-class HttpWebNumber:
-    def __init__(self) -> None:
-        self.__check_number_link: str = "https://htmlweb.ru/geo/api.php?json&telcod="
-        self.__not_found_text: str = "Информация отсутствует"
-
-    def __return_number_data(self, user_number: str) -> dict:
-        try:
-            response = requests.get(self.__check_number_link + user_number, headers={
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15"})
-            if response.ok:
-                return response.json()
-            else:
-                return {"status_error": True}
-        except requests.exceptions.ConnectionError:
-            return {"status_error": True}
-
-    def print_number_results(self) -> None:
-        try:
-            user_number = input('Введите номер телефона\n └ [Пример: +79999993993]: ').strip()
-            if user_number:
-                print("Поиск данных...\n")
-                number_data = self.__return_number_data(user_number=user_number)
-
-                if number_data.get("limit", 1) <= 0:
-                    print(f'К сожалению, вы израсходовали все лимиты...\n └ Обратитесь к @EFall88')
-                    print(f'Всего лимитов: {number_data.get("limit", self.__not_found_text)}')
-
-                elif number_data.get("status_error") or number_data.get("error"):
-                    print('Данные не найдены...\n')
-                else:
-                    country = number_data.get('country', {})
-                    capital = number_data.get('capital', {})
-                    region = number_data.get('region', {"autocod": self.__not_found_text, "name": self.__not_found_text, "okrug": self.__not_found_text})
-                    other = number_data.get('0', {})
-
-                    if country.get("country_code3") == 'UKR':
-                        print(f' ├ Страна: Украина')
-                    else:
-                        print(f'Данные\n ├ Страна: {country.get("name", self.__not_found_text)}, {country.get("fullname", self.__not_found_text)}')
-                     
-                    print(f' ├ Город: {other.get("name", self.__not_found_text)}')
-                    print(f' ├ Почтовый индекс: {other.get("post", self.__not_found_text)}')
-                    print(f' ├ Код валюты: {country.get("iso", self.__not_found_text)}')
-                    print(f' ├ Телефонные коды: {capital.get("telcod", self.__not_found_text)}')
-                    print(f' ├ Гос. номер региона авто: {region.get("autocod", self.__not_found_text)}')
-                    print(f' ├ Оператор: {other.get("oper", self.__not_found_text)}, {other.get("oper_brand", self.__not_found_text)}, {other.get("def", self.__not_found_text)}')
-                    print(f' ├ Местоположение: {country.get("name", self.__not_found_text)}, {region.get("name", self.__not_found_text)}, {other.get("name", self.__not_found_text)}')
-                    print(f' ├ Локация: {number_data.get("location", self.__not_found_text)}')
-                    print(f' ├ Язык общения: {country.get("lang", self.__not_found_text).title()}, {country.get("langcod", self.__not_found_text)}')
-                    print(f' ├ Край/Округ/Область: {region.get("name", self.__not_found_text)}, {region.get("okrug", self.__not_found_text)}')
-                    print(f' ├ Столица: {capital.get("name", self.__not_found_text)}')
-                    print(f' └ Широта/Долгота: {other.get("latitude", self.__not_found_text)}, {other.get("longitude", self.__not_found_text)}')
-
-                    print(f'Проверьте эти ссылки:')
-                    print(f' ├ https://www.instagram.com/accounts/password/reset - Поиск аккаунта в Instagram')
-                    print(f' ├ https://api.whatsapp.com/send?phone={user_number}&text=Привет - Поиск номера в WhatsApp')
-                    print(f' ├ https://facebook.com/login/identify - Поиск аккаунта FaceBook')
-                    print(f' ├ https://www.linkedin.com/checkpoint/rp/request-password-reset - Поиск аккаунта Linkedin')
-                    print(f' ├ https://ok.ru/dk?st.cmd=anonymRecoveryStartPhoneLink - Поиск аккаунта OK')
-                    print(f' ├ https://twitter.com/account/begin_password_reset - Поиск аккаунта Twitter')
-                    print(f' ├ https://viber://add?number={user_number} - Поиск номера в Viber')
-                    print(f' ├ https://skype:{user_number}?call - Звонок на номер с Skype')
-                    print(f' ├ https://t.me/{user_number} - Открыть аккаунт в Телеграмме')
-                    print(f' └ tel:{user_number} - Звонок на номер с телефона')
-
-                    print(f'Всего лимитов: {number_data.get("limit", self.__not_found_text)}')
-
-                    input('Чтобы завершить поиск\n └ Нажмите ENTER ')
-                    os.system("python venom.py")
-
-            else:
-                print('Ошибка\n └ Введите номер телефона!\n')
-
-        except KeyboardInterrupt:
-            print('\nВынужденная остановка работы\n')
-            
+def main():
+    # Ввод номера телефона
+    phone = Write.Input("\n[?] Введите номер телефона -> ", Colors.red_to_yellow, interval=0.005)
+    phoneinfo(phone)
+    input("Enter для продолжения...")
 
 if __name__ == "__main__":
-    checker = HttpWebNumber()
-    checker.print_number_results()
-    
-
+    main()
